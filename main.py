@@ -2,10 +2,11 @@ from typing import List
 from fastapi import FastAPI
 from models import ScraperConfig, Product
 from scraper import  Scraper
+from notifier import ConsoleNotifier
 from storage import JSONStorage
 
 app = FastAPI()
-scraper = Scraper(storage=JSONStorage())
+scraper = Scraper(storage=JSONStorage(), notifier=ConsoleNotifier())
 
 @app.get("/")
 async def root():

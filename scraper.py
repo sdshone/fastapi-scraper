@@ -4,11 +4,13 @@ from bs4 import BeautifulSoup
 from typing import List
 from models import ScraperConfig, Product
 from storage import Storage
+from notifier import Notifier
 import os
 
 class Scraper:
-    def __init__(self, storage: Storage):
+    def __init__(self, storage: Storage, notifier: Notifier):
         self.storage = storage
+        self.notifier = notifier
 
     async def scrape(self, settings: ScraperConfig) -> List[Product]:
         products = []
@@ -21,13 +23,12 @@ class Scraper:
             for item in items:
                 title = item.find("h2", class_="woo-loop-product__title").text.strip()
                 price = float(item.find("span", class_="woocommerce-Price-amount").text.strip().replace('₹', '').replace(',', ''))
-                
                 image_url = item.find("img", class_="attachment-woocommerce_thumbnail")["data-lazy-src"]
                 image_path = self._download_image(image_url)
                 product = Product(title=title, price=price, image=image_path)
                 products.append(product)
                 self.storage.save(data=product)
-
+        self.notifier.notify(f"Scraped {len(products)} products")
         return products
 
     def _make_request(self, url: str) -> requests.Response:
