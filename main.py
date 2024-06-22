@@ -5,10 +5,11 @@ from scraper import  Scraper
 from notifier import ConsoleNotifier
 from storage import JSONStorage
 from auth import authenticate
+from cache import RedisCache
 
 
 app = FastAPI()
-scraper = Scraper(storage=JSONStorage(), notifier=ConsoleNotifier())
+scraper = Scraper(storage=JSONStorage(), notifier=ConsoleNotifier(), cache=RedisCache())
 
 @app.get("/")
 async def root():

@@ -5,12 +5,14 @@ from typing import List
 from models import ScraperConfig, Product
 from storage import Storage
 from notifier import Notifier
+from cache import Cache
 import os
 
 class Scraper:
-    def __init__(self, storage: Storage, notifier: Notifier):
+    def __init__(self, storage: Storage, notifier: Notifier, cache: Cache):
         self.storage = storage
         self.notifier = notifier
+        self.cache = cache
 
     async def scrape(self, settings: ScraperConfig) -> List[Product]:
         products = []
@@ -26,9 +28,12 @@ class Scraper:
                 image_url = item.find("img", class_="attachment-woocommerce_thumbnail")["data-lazy-src"]
                 image_path = self._download_image(image_url)
                 product = Product(title=title, price=price, image=image_path)
-                products.append(product)
-                self.storage.save(data=product)
-        self.notifier.notify(f"Scraped {len(products)} products")
+                if not await self.cache.is_cached(product) or await self.cache.is_price_changed(product):
+                    products.append(product)
+                    self.storage.save(product)
+                    await self.cache.update_cache(product)
+
+        self.notifier.notify(f"Scraped {len(items)} products, updated {len(products)}")
         return products
 
     def _make_request(self, url: str) -> requests.Response:
