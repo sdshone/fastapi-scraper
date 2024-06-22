@@ -3,9 +3,13 @@ import requests
 from bs4 import BeautifulSoup
 from typing import List
 from models import ScraperConfig, Product
+from storage import Storage
 import os
 
 class Scraper:
+    def __init__(self, storage: Storage):
+        self.storage = storage
+
     async def scrape(self, settings: ScraperConfig) -> List[Product]:
         products = []
         base_url = settings.url # eg https://dentalstall.com/shop/page
@@ -22,6 +26,7 @@ class Scraper:
                 image_path = self._download_image(image_url)
                 product = Product(title=title, price=price, image=image_path)
                 products.append(product)
+                self.storage.save(data=product)
 
         return products
 
