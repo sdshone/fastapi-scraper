@@ -19,3 +19,4 @@ class JSONStorage(Storage):
         scraped_data.append(data.model_dump_json())
         with open(self.file_path, "w") as f:
             json.dump(scraped_data, f, indent=4)
+        print('Product saved to JSON successfully.')

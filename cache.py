@@ -28,3 +28,4 @@ class RedisCache(Cache):
 
     async def update_cache(self, product: Product):
         await self.redis.set(product.title, product.model_dump_json())
+        print('Product cache created/updated to Redis successfully.')

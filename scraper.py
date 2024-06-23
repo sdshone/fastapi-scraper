@@ -1,7 +1,7 @@
 import time
 import requests
 from bs4 import BeautifulSoup
-from typing import List
+from typing import List, Optional
 from models import ScraperConfig, Product
 from storage import Storage
 from notifier import Notifier
@@ -14,12 +14,12 @@ class Scraper:
         self.notifier = notifier
         self.cache = cache
 
-    async def scrape(self, settings: ScraperConfig) -> List[Product]:
+    async def scrape(self, config: ScraperConfig) -> List[Product]:
         products = []
-        base_url = settings.url # eg https://dentalstall.com/shop/page
-        for page in range(1, settings.pages + 1):
+        base_url = 'https://dentalstall.com/shop/page'
+        for page in range(1, config.pages + 1):
             url = f"{base_url}/{page}/"
-            response = self._make_request(url)
+            response = self._make_request(url, config.proxy)
             soup = BeautifulSoup(response.content, "html.parser")
             items = soup.find_all("li", class_="product")
             for item in items:
@@ -28,19 +28,22 @@ class Scraper:
                 image_url = item.find("img", class_="attachment-woocommerce_thumbnail")["data-lazy-src"]
                 image_path = self._download_image(image_url)
                 product = Product(title=title, price=price, image=image_path)
+                products.append(product)
                 if not await self.cache.is_cached(product) or await self.cache.is_price_changed(product):
-                    products.append(product)
                     self.storage.save(product)
                     await self.cache.update_cache(product)
 
-        self.notifier.notify(f"Scraped {len(items)} products, updated {len(products)}")
+        self.notifier.notify(f"Scraped {len(products)} products")
         return products
 
-    def _make_request(self, url: str) -> requests.Response:
+    def _make_request(self, url: str, proxy: Optional[str]) -> requests.Response:
         retries = 3
         while retries > 0:
             try:
-                response = requests.get(url)
+                if proxy:
+                    response = requests.get(url, proxies={"http": proxy, "https": proxy})
+                else:
+                    response = requests.get(url)
                 response.raise_for_status()
                 return response
             except requests.RequestException as e:
@@ -48,7 +51,7 @@ class Scraper:
                 if retries == 0:
                     raise e
                 time.sleep(2) # simple backoff - can be exponential
-        raise Exception('Request failed')
+        raise requests.RequestException('Request failed')
 
     def _download_image(self, url: str) -> str:
         response = requests.get(url)

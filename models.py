@@ -1,8 +1,9 @@
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
+from typing import Optional
 
 class ScraperConfig(BaseModel):
-    url: HttpUrl
-    pages: int
+    pages: Optional[int] = 1  # Default to 1 page if not provided
+    proxy: Optional[str] = None  # Default to None if not provided
 
 
 class Product(BaseModel):
