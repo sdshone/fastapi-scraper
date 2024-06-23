@@ -1,3 +1,4 @@
+import asyncio
 import time
 import requests
 from bs4 import BeautifulSoup
@@ -29,7 +30,7 @@ class Scraper:
         for page in range(1, config.pages + 1):
             url = f"{base_url}/{page}/"
 
-            response = self._make_request(url, config.proxy)
+            response = await self._make_request(url, config.proxy)
             soup = BeautifulSoup(response.content, "html.parser")
 
             items = soup.find_all("li", class_="product")
@@ -54,7 +55,7 @@ class Scraper:
         self.notifier.notify(f"Scraped {len(products)} products")
         return products
 
-    def _make_request(self, url: str, proxy: Optional[str]) -> requests.Response:
+    async def _make_request(self, url: str, proxy: Optional[str]) -> requests.Response:
         """
         Make an HTTP GET request to the specified URL with optional proxy support and returns response.
         """
@@ -71,7 +72,7 @@ class Scraper:
                 retries -= 1
                 if retries == 0:
                     raise e
-                time.sleep(2) # simple backoff - can be exponential
+                await asyncio.sleep(2) # simple backoff - can be exponential
         raise requests.RequestException('Request failed')
 
     def _download_image(self, url: str) -> str:

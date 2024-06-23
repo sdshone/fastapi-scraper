@@ -1,6 +1,7 @@
 import json
 from models import Product
 from abc import ABC, abstractmethod
+import os
 
 class Storage(ABC):
     """
@@ -22,6 +23,11 @@ class JSONStorage(Storage):
         Initialize the JSONStorage with a file path.
         """
         self.file_path = file_path
+
+        # Check if the file exists and delete it if it does before the scraper runs
+        if os.path.exists(self.file_path):
+            os.remove(self.file_path)
+            print(f"Deleted existing file: {self.file_path}")
 
     def save(self, data: Product):
         """
