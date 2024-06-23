@@ -1,16 +1,32 @@
 import json
 from models import Product
-from typing import List
+from abc import ABC, abstractmethod
 
-class Storage:
+class Storage(ABC):
+    """
+    Abstract base class for a storage system.
+    """
+    @abstractmethod
     def save(self, data: Product):
+        """
+        Save the given product data.
+        """
         raise NotImplementedError
 
 class JSONStorage(Storage):
+    """
+    JSON-based storage implementation.
+    """
     def __init__(self, file_path: str = "scraped_data.json"):
+        """
+        Initialize the JSONStorage with a file path.
+        """
         self.file_path = file_path
 
     def save(self, data: Product):
+        """
+        Save the product data to a JSON file.
+        """
         try:
             with open(self.file_path, "r") as f:
                 scraped_data = json.load(f)
