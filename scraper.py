@@ -37,15 +37,19 @@ class Scraper:
                 title = item.find("h2", class_="woo-loop-product__title").text.strip()
                 price = float(item.find("span", class_="woocommerce-Price-amount").text.strip().replace('₹', '').replace(',', ''))
                 image_url = item.find("img", class_="attachment-woocommerce_thumbnail")["data-lazy-src"]
+                
+                # Using the product link as the cache key as title is can be same for different products
+                # Not added product_url as part of the Product as the requirement does not mention it
+                product_url = item.find("a", class_="buy-now-btn")["href"]
 
                 image_path = self._download_image(image_url)
                 product = Product(title=title, price=price, image=image_path)
                 products.append(product)
 
                 # We want to save to storage and update cache only if currently not cached/ price now updated.
-                if not await self.cache.is_cached(product) or await self.cache.is_price_changed(product):
+                if not await self.cache.is_cached(product, product_url) or await self.cache.is_price_changed(product, product_url):
                     self.storage.save(product)
-                    await self.cache.update_cache(product)
+                    await self.cache.update_cache(product, product_url)
 
         self.notifier.notify(f"Scraped {len(products)} products")
         return products
